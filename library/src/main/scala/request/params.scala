@@ -127,6 +127,13 @@ object QParams {
         (Some(key), log0, params.get(key).flatMap { _.firstOption })
     }
 
+  /** Create a validion token from a named value from the input Params.Map */
+  def lookupAll[E](key: String): QueryM[E,Option[Seq[String]]] =
+    QueryM {
+      (params, _, log0) =>
+        (Some(key), log0, params.get(key))
+    }
+
   /** Create and name a validation token for an external input */
   def external[E, A](key: String, value: Option[A]): QueryM[E,Option[A]] =
     QueryM {

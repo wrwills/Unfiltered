@@ -4,7 +4,7 @@ import Keys._
 object BuildSettings {
   val buildOrganization = "net.databinder"
   val buildScalaVersion = "2.9.0-1"
-  val buildVersion      = "0.3.4-SNAPSHOT"
+  val buildVersion      = "0.3.3-jmp"
   val buildName         = "Unfiltered Web Toolkit"
 
   val buildSettings = Defaults.defaultSettings ++ Seq (organization := buildOrganization,
@@ -63,6 +63,7 @@ object Dependencies {
   val scalatestVersion = "1.3"
   val servletApiVersion = "2.3"
   val specsVersion = "1.6.7"
+  val scalazVersion = "6.0"
 
   val commonsCodec = "commons-codec" % "commons-codec" % commonsCodecVersion
   val commonsFileupload = "commons-fileupload" % "commons-fileupload" % commonsFileuploadVersion
@@ -79,6 +80,7 @@ object Dependencies {
   val scalatest = "org.scalatest" % "scalatest" % scalatestVersion
   val servletApi = "javax.servlet" % "servlet-api" % servletApiVersion % "provided"
   val specs = "org.scala-tools.testing" % "specs_2.8.1" % specsVersion
+  val scalazCore = "org.scalaz" %% "scalaz-core" % scalazVersion
 }
 
 
@@ -94,7 +96,7 @@ object CosmosBuild extends Build {
   val jettyAjpDeps = Seq(jettyAjp)
   val jettyDeps = Seq(jettyArtefact)
   val jsonDeps = Seq(liftJson)
-  val libraryDeps = Seq(commonsCodec)
+  val libraryDeps = Seq(commonsCodec,scalazCore)
   val nettyDeps = Seq(nettyArtefact)
   val oauthDeps = Seq(databinderOAuth)
   val scalaTestDeps = Seq(scalatest,databinderMime)
@@ -102,29 +104,29 @@ object CosmosBuild extends Build {
   val specDeps = Seq(specs,databinderMime)
   val uploadDeps = Seq(servletApi,commonsIo,commonsFileupload)
 
-  lazy val unfiltered = Project("Unfiltered",file("."), settings = buildSettings) aggregate (library,filterP,uploads,util,jetty,jettyAjpProject,netty,nettyServer,jsonProject,specHelpers,scalaTestHelpers,scalate,websockets,oauth)
+  lazy val unfiltered = Project("Unfiltered All",file("."), settings = buildSettings) aggregate (library,filterP,uploads,util,jetty,jettyAjpProject,netty,nettyServer,jsonProject,specHelpers,scalaTestHelpers,scalate,websockets,oauth)
   lazy val library = Project("library",
                              file("library"),
-                             settings = buildSettings ++ Seq(name := "Unfiltered Library",
+                             settings = buildSettings ++ Seq(name := "Unfiltered",
                                                              libraryDependencies := libraryDeps)) dependsOn(util)
   lazy val filterP = Project("filter",
                              file("filter"),
-                             settings = buildSettings ++ Seq(name := "Servlet Filter",
+                             settings = buildSettings ++ Seq(name := "Unfiltered Filter",
                                                              libraryDependencies := filterDeps)) dependsOn(library)
   lazy val uploads = Project("uploads",
                              file("uploads"),
-                             settings = buildSettings ++ Seq(name := "Servlet File Upload",
+                             settings = buildSettings ++ Seq(name := "Unfiltered Uploads",
                                                              libraryDependencies := uploadDeps)) dependsOn(filterP)
   lazy val util = Project("util",
                           file("util"),
-                          settings = buildSettings ++ Seq(name := "Unfiltered utils"))
+                          settings = buildSettings ++ Seq(name := "Unfiltered Utils"))
   lazy val jetty = Project("jetty",
                            file("jetty"),
-                           settings = buildSettings ++ Seq(name := "Jetty",
+                           settings = buildSettings ++ Seq(name := "Unfiltered Jetty",
                                                            libraryDependencies := jettyDeps)) dependsOn(util)
   lazy val jettyAjpProject = Project("jetty-ajp",
                                      file("jetty-ajp"),
-                                     settings = buildSettings ++ Seq(name := "Jetty AJP",
+                                     settings = buildSettings ++ Seq(name := "Unfiltered Jetty AJP",
                                                                      libraryDependencies := jettyAjpDeps)) dependsOn(jetty)
   lazy val nettyServer = Project("netty-server",
                                  file("netty-server"),
@@ -135,11 +137,11 @@ object CosmosBuild extends Build {
                            settings = buildSettings ++ Seq(name := "Unfiltered Netty")) dependsOn(nettyServer,library)
   lazy val specHelpers = Project("spec",
                                  file("spec"),
-                                 settings = buildSettings ++ Seq(name := "Unfiltered Spec Helpers",
+                                 settings = buildSettings ++ Seq(name := "Unfiltered Spec",
                                                                  libraryDependencies := specDeps)) dependsOn(jetty,netty)
   lazy val scalaTestHelpers = Project("scalatest",
                                       file("scalatest"),
-                                      settings = buildSettings ++ Seq(name := "Unfiltered Scalatest Helpers",
+                                      settings = buildSettings ++ Seq(name := "Unfiltered Scalatest",
                                                                       libraryDependencies := scalaTestDeps)) dependsOn(jetty,netty)
   lazy val scalate = Project("scalate",
                              file("scalate"),
@@ -153,6 +155,6 @@ object CosmosBuild extends Build {
                            settings = buildSettings ++ Seq(name := "Unfiltered OAuth")) dependsOn(jetty,filterP)
   lazy val jsonProject = Project("json",
                                  file("json"),
-                                 settings = buildSettings ++ Seq(name := "Unfiltered JSON",
+                                 settings = buildSettings ++ Seq(name := "Unfiltered Json",
                                                                  libraryDependencies := jsonDeps)) dependsOn(library)
 }
