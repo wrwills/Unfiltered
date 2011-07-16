@@ -28,8 +28,9 @@ object Shared {
 
 object Unfiltered extends Build {
   import Shared._
-  import posterous.Publish.{previewNotes, publishNotes, posterousCheck,
-                            posterousRequiredInputs, posterousDupCheck}
+//  import posterous.Publish.{previewNotes, publishNotes, posterousCheck,
+//                            posterousRequiredInputs, posterousDupCheck}
+  val scalazVersion = "6.0.1"
 
   def id(name: String) = "unfiltered-%s" format name
 
@@ -50,11 +51,11 @@ object Unfiltered extends Build {
   lazy val unfiltered =
     Project("unfiltered-all", file("."),
             settings = buildSettings ++ Seq(
-              aggregate in previewNotes := false,
-              aggregate in publishNotes := false,
-              aggregate in posterousCheck := false,
-              aggregate in posterousRequiredInputs := false,
-              aggregate in posterousDupCheck := false
+//              aggregate in previewNotes := false,
+//              aggregate in publishNotes := false
+//              aggregate in posterousCheck := false,
+//              aggregate in posterousRequiredInputs := false,
+//              aggregate in posterousDupCheck := false
             )) aggregate(
             library, filters, uploads, util, jetty, jettyAjpProject,
             netty, nettyServer, json, specHelpers, scalaTestHelpers,
@@ -71,7 +72,8 @@ object Unfiltered extends Build {
               },
               libraryDependencies <++= scalaVersion(v => Seq(
                 "commons-codec" % "commons-codec" % "1.4",
-                Shared.specsDep(v) % "test"
+                Shared.specsDep(v) % "test",
+                "org.scalaz" %% "scalaz-core" % scalazVersion
              ) ++ integrationTestDeps(v))
             )) dependsOn(util)
 
