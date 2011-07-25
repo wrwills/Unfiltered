@@ -28,8 +28,6 @@ object Shared {
 
 object Unfiltered extends Build {
   import Shared._
-//  import posterous.Publish.{previewNotes, publishNotes, posterousCheck,
-//                            posterousRequiredInputs, posterousDupCheck}
   val scalazVersion = "6.0.1"
 
   def id(name: String) = "unfiltered-%s" format name
@@ -50,13 +48,7 @@ object Unfiltered extends Build {
 
   lazy val unfiltered =
     Project("unfiltered-all", file("."),
-            settings = buildSettings ++ Seq(
-//              aggregate in previewNotes := false,
-//              aggregate in publishNotes := false
-//              aggregate in posterousCheck := false,
-//              aggregate in posterousRequiredInputs := false,
-//              aggregate in posterousDupCheck := false
-            )) aggregate(
+            settings = buildSettings) aggregate(
             library, filters, uploads, util, jetty, jettyAjpProject,
             netty, nettyServer, json, specHelpers, scalaTestHelpers,
             scalate, websockets, oauth)
@@ -163,7 +155,7 @@ object Unfiltered extends Build {
               },
             libraryDependencies <++= scalaVersion(v => Seq(
               if (v.startsWith("2.8")) "net.liftweb" %% "lift-json" % "2.3"
-              else "net.liftweb" %% "lift-json" % "2.4-M2") ++ integrationTestDeps(v))
+              else "net.liftweb" %% "lift-json" % "2.4-M3") ++ integrationTestDeps(v))
           )) dependsOn(library)
 
   lazy val scalate =
