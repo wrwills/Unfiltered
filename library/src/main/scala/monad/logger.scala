@@ -2,7 +2,9 @@ package unfiltered.monad
 import scalaz._
 import Scalaz._
 
-sealed trait LogLevel
+sealed trait LogLevel {
+  val message:String
+}
 case class Trace(message:String) extends LogLevel
 case class Debug(message:String) extends LogLevel
 case class Info(message:String) extends LogLevel

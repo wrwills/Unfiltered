@@ -34,28 +34,43 @@ class ParamOps(val params:Map[String,Seq[String]]) {
 
   def required[T](key:String)(implicit c:Conversion[T], m:Manifest[T]):RequestLogger[T] = mkRequestLogger {
     (params.get(key).map {
-      x => allCatch.opt(c.to(x.head).success).getOrElse("Unable to convert %s->'%s' to %s".format(key,x.head,m.erasure.getName).invalid)
+      x => allCatch.opt(c.to(x.head).success).getOrElse("Unable to convert values of parameter '%s'->'%s' to %s".format(key,x.head,m.erasure.getName).invalid)
     }) getOrElse ("No value for '%s'".format(key).missing)
   }
+
+  def optRequired[T](key:String,message:String)(implicit c:Conversion[T], m:Manifest[T]):RequestLogger[Option[T]] =
+    allCatch.either(params
+                     .get(key)
+                     .map(x => c.to(x.head))).fold(fa = e => mkRequestLogger[Option[T]](None.success) :+-> "Unable to convert values of parameter '%s'->'%s' to %s".format(key,params(key).head,m.erasure.getName).err,
+                                                   fb = s => if (s.isDefined) mkRequestLogger[Option[T]](s.success)
+                                                             else mkRequestLogger[Option[T]](None.success) :+-> message.err)
 
   def optional[T](key:String)(implicit c:Conversion[T], m:Manifest[T]):RequestLogger[Option[T]] = 
     mkRequestLogger { (allCatch.either(params
                                        .get(key)
                                        .map(x => c.to(x.head)))
-                       .fold(fa = e => "Unable to convert values of %s->'%s' to %s".format(key,params(key).head,m.erasure.getName).invalid(e),
+                       .fold(fa = e => "Unable to convert values of parameter '%s'->'%s' to %s".format(key,params(key).head,m.erasure.getName).invalid(e),
                              fb = s => s.success)) }
 
   def requiredSeq[T](key:String)(implicit c:Conversion[T], m:Manifest[T]):RequestLogger[Seq[T]] = mkRequestLogger {
     (params.get(key).map {
-      x => allCatch.opt(c.toSeq(x).success).getOrElse("Unable to convert values of %s->'%s' to %s".format(key,x,m.erasure.getName).invalid)
+      x => allCatch.opt(c.toSeq(x).success).getOrElse("Unable to convert values of parameter '%s'->'%s' to %s".format(key,x.mkString("[",",","]"),m.erasure.getName).invalid)
     }) getOrElse ("No value for '%s'".format(key).missing)
   }
+
+  def optRequiredSeq[T](key:String,message:String)(implicit c:Conversion[T], m:Manifest[T]):RequestLogger[Option[Seq[T]]] =
+    allCatch.either(params
+                     .get(key)
+                     .map(x => c.toSeq(x))).fold(fa = e => mkRequestLogger[Option[Seq[T]]](None.success) :+-> "Unable to convert values of parameter '%s'->'%s' to %s".format(key,params(key).mkString("[",",","]"),m.erasure.getName).err,
+                                                   fb = s => if (s.isDefined) mkRequestLogger[Option[Seq[T]]](s.success)
+                                                             else mkRequestLogger[Option[Seq[T]]](None.success) :+-> message.err)
+
 
   def optionalSeq[T](key:String)(implicit c:Conversion[T], m:Manifest[T]):RequestLogger[Option[Seq[T]]] = 
     mkRequestLogger { (allCatch.either(params
                                        .get(key)
                                        .map(x => c.toSeq(x)))
-                       .fold(fa = e => "Unable to convert values of %s->'%s' to %s".format(key,params(key),m.erasure.getName).invalid(e),
+                       .fold(fa = e => "Unable to convert values of parameter '%s'->'%s' to %s".format(key,params(key).mkString("[",",","]"),m.erasure.getName).invalid(e),
                              fb = s => s.success)) }
 
 }
