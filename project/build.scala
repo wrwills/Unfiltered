@@ -55,7 +55,7 @@ object Unfiltered extends Build {
             settings = buildSettings) aggregate(
             library, filters, uploads, util, jetty, jettyAjpProject,
             netty, nettyServer, json, specHelpers, scalaTestHelpers,
-            scalate, websockets, oauth)
+            scalate, websockets, oauth, porthole)
 
   lazy val library: Project =
     Project("unfiltered", file("library"),
@@ -163,6 +163,9 @@ object Unfiltered extends Build {
                 case _ => "net.liftweb" %% "lift-json" % "2.4-M3"
               }) ++ integrationTestDeps(v))
           )) dependsOn(library)
+
+  lazy val porthole =
+    Project(id("porthole"), file("porthole")) dependsOn(library)
 
   lazy val scalate =
     Project(id("scalate"), file("scalate"),
