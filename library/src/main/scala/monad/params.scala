@@ -78,6 +78,8 @@ class ParamOps(val params:Map[String,Seq[String]]) {
 object ParamOps {
   import RequestError._
   import LogLevel._
+  import RequestLogger._
+//  import 
 
   implicit def rlToParamOpsW[T](rl:RequestLogger[T]):ParamOpsW[T] = new ParamOpsW[T](rl)
   implicit def rlToParamOpsOptW[T](rl:RequestLogger[Option[T]]):ParamOpsOptW[T] = new ParamOpsOptW[T](rl)
@@ -89,9 +91,9 @@ object ParamOps {
   implicit def rlToStringParamOpsOptW(rl:RequestLogger[Option[String]]):StringParamOpsOptW = new StringParamOpsOptW(rl)
   implicit def rlToSeqStringParamOpsOptW(rl:RequestLogger[Option[Seq[String]]]):SeqStringParamOpsOptW = new SeqStringParamOpsOptW(rl)
 
-  def applyValidation[T](value:T,body:T => Validation[RequestError,T]):Validation[RequestError,T] = body(value)
+  def applyValidation[T](value:T,body:T => Validation[ERRORS[RequestError],T]):Validation[ERRORS[RequestError],T] = body(value)
 
-  def is[T](message:String)(body:T => Boolean):T => Validation[RequestError,T] = {
+  def is[T](message:String)(body:T => Boolean):T => Validation[ERRORS[RequestError],T] = {
     x => {
       allCatch.either(body(x)) match {
         case Left(t) => t.uncaught
@@ -102,7 +104,7 @@ object ParamOps {
   }
 
   class ParamOpsW[T](rl:RequestLogger[T]) {
-    def check(body:T => Validation[RequestError,T]):RequestLogger[T] =
+    def check(body:T => Validation[ERRORS[RequestError],T]):RequestLogger[T] =
       rl.copy(over = rl.over.flatMap(x => applyValidation(x,body)))
   }
 
@@ -110,7 +112,7 @@ object ParamOps {
     def filter(test:T => Boolean):RequestLogger[Seq[T]] =
       rl.copy(over = rl.over.map(_.filter(test)))
 
-    def isEmpty(value: => Validation[RequestError,Seq[T]]):RequestLogger[Seq[T]] =
+    def isEmpty(value: => Validation[ERRORS[RequestError],Seq[T]]):RequestLogger[Seq[T]] =
       rl.over.fold(failure = _ => rl,
                    success = x => if (x.isEmpty) rl.copy(over = value) else rl)
   }
@@ -121,7 +123,7 @@ object ParamOps {
 
     def ignoreEmpty:RequestLogger[Option[Seq[T]]] = isEmpty(None.success)
 
-    def isEmpty(value: => Validation[RequestError,Option[Seq[T]]]):RequestLogger[Option[Seq[T]]] =
+    def isEmpty(value: => Validation[ERRORS[RequestError],Option[Seq[T]]]):RequestLogger[Option[Seq[T]]] =
       rl.over.fold(failure = _ => rl,
                    success = {
                      case None => rl
@@ -154,7 +156,7 @@ object ParamOps {
   }
 
   class ParamOpsOptW[T](rl:RequestLogger[Option[T]]) {
-    def check(body:T => Validation[RequestError,T]):RequestLogger[Option[T]] =
+    def check(body:T => Validation[ERRORS[RequestError],T]):RequestLogger[Option[T]] =
       rl.over.fold(failure = _ => rl,
                    success = {
                      case None => rl
