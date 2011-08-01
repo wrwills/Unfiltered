@@ -31,46 +31,38 @@ class ParamOps(val params:Map[String,Seq[String]]) {
   import RequestLogger._, RequestError._
   import LogLevel._
   import DefaultConversions._
+  import ParamOps._
 
-  def required[T](key:String)(implicit c:Conversion[T], m:Manifest[T]):RequestLogger[T] = mkRequestLogger {
+  def required[T](key:String,
+                  noValueErrorMessage:String => String = defaultNoValueMessage _,
+                  conversionErrorMessage:(String,String,String)=>String = defaultConversionMessage _)(implicit c:Conversion[T], m:Manifest[T]):RequestLogger[T] = mkRequestLogger {
     (params.get(key).map {
-      x => allCatch.opt(c.to(x.head).success).getOrElse("Unable to convert values of parameter '%s'->'%s' to %s".format(key,x.head,m.erasure.getName).invalid)
-    }) getOrElse ("No value for '%s'".format(key).missing)
+      x => allCatch.opt(c.to(x.head).success).getOrElse(conversionErrorMessage(key,x.head,m.erasure.getName).invalid)
+    }) getOrElse (noValueErrorMessage(key).missing)
   }
 
-  def optRequired[T](key:String,message:String)(implicit c:Conversion[T], m:Manifest[T]):RequestLogger[Option[T]] =
-    allCatch.either(params
-                     .get(key)
-                     .map(x => c.to(x.head))).fold(fa = e => mkRequestLogger[Option[T]](None.success) :+-> "Unable to convert values of parameter '%s'->'%s' to %s".format(key,params(key).head,m.erasure.getName).err,
-                                                   fb = s => if (s.isDefined) mkRequestLogger[Option[T]](s.success)
-                                                             else mkRequestLogger[Option[T]](None.success) :+-> message.err)
-
-  def optional[T](key:String)(implicit c:Conversion[T], m:Manifest[T]):RequestLogger[Option[T]] = 
+  def optional[T](key:String,
+                  conversionErrorMessage:(String,String,String)=>String = defaultConversionMessage _)(implicit c:Conversion[T], m:Manifest[T]):RequestLogger[Option[T]] = 
     mkRequestLogger { (allCatch.either(params
                                        .get(key)
                                        .map(x => c.to(x.head)))
-                       .fold(fa = e => "Unable to convert values of parameter '%s'->'%s' to %s".format(key,params(key).head,m.erasure.getName).invalid(e),
+                       .fold(fa = e => conversionErrorMessage(key,params(key).head,m.erasure.getName).invalid(e),
                              fb = s => s.success)) }
 
-  def requiredSeq[T](key:String)(implicit c:Conversion[T], m:Manifest[T]):RequestLogger[Seq[T]] = mkRequestLogger {
+  def requiredSeq[T](key:String,
+                     noValueErrorMessage:String => String = defaultNoValueMessage _,
+                     conversionErrorMessage:(String,String,String)=>String = defaultConversionMessage _)(implicit c:Conversion[T], m:Manifest[T]):RequestLogger[Seq[T]] = mkRequestLogger {
     (params.get(key).map {
-      x => allCatch.opt(c.toSeq(x).success).getOrElse("Unable to convert values of parameter '%s'->'%s' to %s".format(key,x.mkString("[",",","]"),m.erasure.getName).invalid)
-    }) getOrElse ("No value for '%s'".format(key).missing)
+      x => allCatch.opt(c.toSeq(x).success).getOrElse(conversionErrorMessage(key,x.mkString("[",",","]"),m.erasure.getName).invalid)
+    }) getOrElse (noValueErrorMessage(key).missing)
   }
 
-  def optRequiredSeq[T](key:String,message:String)(implicit c:Conversion[T], m:Manifest[T]):RequestLogger[Option[Seq[T]]] =
-    allCatch.either(params
-                     .get(key)
-                     .map(x => c.toSeq(x))).fold(fa = e => mkRequestLogger[Option[Seq[T]]](None.success) :+-> "Unable to convert values of parameter '%s'->'%s' to %s".format(key,params(key).mkString("[",",","]"),m.erasure.getName).err,
-                                                   fb = s => if (s.isDefined) mkRequestLogger[Option[Seq[T]]](s.success)
-                                                             else mkRequestLogger[Option[Seq[T]]](None.success) :+-> message.err)
-
-
-  def optionalSeq[T](key:String)(implicit c:Conversion[T], m:Manifest[T]):RequestLogger[Option[Seq[T]]] = 
+  def optionalSeq[T](key:String,
+                     conversionErrorMessage:(String,String,String)=>String = defaultConversionMessage _)(implicit c:Conversion[T], m:Manifest[T]):RequestLogger[Option[Seq[T]]] = 
     mkRequestLogger { (allCatch.either(params
                                        .get(key)
                                        .map(x => c.toSeq(x)))
-                       .fold(fa = e => "Unable to convert values of parameter '%s'->'%s' to %s".format(key,params(key).mkString("[",",","]"),m.erasure.getName).invalid(e),
+                       .fold(fa = e => conversionErrorMessage(key,params(key).mkString("[",",","]"),m.erasure.getName).invalid(e),
                              fb = s => s.success)) }
 
 }
@@ -79,7 +71,10 @@ object ParamOps {
   import RequestError._
   import LogLevel._
   import RequestLogger._
-//  import 
+
+  def defaultConversionMessage(key:String,errorValue:String,targetType:String):String =
+    "Unable to convert values of parameter '%s'->'%s' to %s".format(key,errorValue,targetType)
+  def defaultNoValueMessage(key:String):String = "No value for '%s'".format(key)
 
   implicit def rlToParamOpsW[T](rl:RequestLogger[T]):ParamOpsW[T] = new ParamOpsW[T](rl)
   implicit def rlToParamOpsOptW[T](rl:RequestLogger[Option[T]]):ParamOpsOptW[T] = new ParamOpsOptW[T](rl)

@@ -48,17 +48,6 @@ trait MonadSpec extends unfiltered.spec.Hosted {
       expected(request).over.fold(failure = f => BadRequest ~> ResponseString(f.toString),
                                   success = s => Ok ~> s)
     }
-    case request@GET(UFPath("/relaxed_int")) => {
-      val expected:RequestMonad[A,Option[Int]] = for {
-        params <- getParams
-        number <- params.optRequired[Int]("number","Missing required parameter 'number'. The value must be an integer")
-      } yield number
-      val result = expected(request)
-      if (result.log.isEmpty)
-        result.over.fold(failure = f => BadRequest ~> ResponseString(f.toString),
-                         success = s => Ok ~> ResponseString(s.get.toString))
-      else BadRequest ~> ResponseString(result.log.map(x => "\"%s\"".format(x.message)).toStream.mkString("[",",","]"))
-    }
     case request@GET(UFPath("/applicative_ints")) => {
       val expected:RequestMonad[A,Int] = for {
         params <- getParams
@@ -70,7 +59,7 @@ trait MonadSpec extends unfiltered.spec.Hosted {
     }
   }
 
-  "Strict Monadic extractor" should {
+  "Monadic extractor" should {
     "match and return number" in {
       Http(host / "int" <<? Map("number" -> "8") as_str) must_=="8"
     }
@@ -89,17 +78,6 @@ trait MonadSpec extends unfiltered.spec.Hosted {
     }
     "fail on a missing required argument" in {
       Http.when(_ == 400)(host / "string" as_str) must_=="NonEmptyList(Missing(No value for 'string'))"
-    }
-  }
-  "Relaxed Monadic extractor" should {
-    "match and return number" in {
-      Http(host / "relaxed_int" <<? Map("number" -> "8") as_str) must_=="8"
-    }
-    "fail on a non-number" in {
-      Http.when(_ == 400)(host / "relaxed_int" <<? Map("number" -> "8a") as_str) must_== """["Unable to convert values of parameter 'number'->'8a' to int"]"""
-    }
-    "fail on a missing argument" in {
-      Http.when(_ == 400)(host / "relaxed_int" as_str) must_== """["Missing required parameter 'number'. The value must be an integer"]"""
     }
   }
   "Applicative Functor extractor" should {
