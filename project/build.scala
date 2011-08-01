@@ -56,9 +56,9 @@ object Unfiltered extends Build {
             settings = buildSettings) aggregate(
             library, filters, uploads, util, jetty, jettyAjpProject,
             netty, nettyServer, json, specHelpers, scalaTestHelpers,
-            scalate, websockets, oauth)
+            scalate, websockets, oauth, scalaz)
 
-  lazy val library: Project =
+   lazy val library: Project =
     Project("unfiltered", file("library"),
             settings = buildSettings ++ Seq(
               name := "unfiltered",
@@ -69,11 +69,21 @@ object Unfiltered extends Build {
               },
               libraryDependencies <++= scalaVersion(v => Seq(
                 "commons-codec" % "commons-codec" % "1.4",
-                Shared.specsDep(v) % "test",
-                "org.scalaz" %% "scalaz-core" % scalazVersion
-             ) ++ integrationTestDeps(v))
+                Shared.specsDep(v) % "test"
+              ) ++ integrationTestDeps(v))
             )) dependsOn(util)
-
+ 
+  lazy val scalaz: Project =
+    Project(id("scalaz"), file("scalaz"),
+            settings = buildSettings ++ Seq(
+              name := "Unfiltered Scalaz",
+              unmanagedClasspath in (local("scalaz"), Test) <++=
+                (fullClasspath in (local("spec"), Compile)).identity,
+              libraryDependencies <++= scalaVersion(v => Seq(
+                "org.scalaz" %% "scalaz-core" % scalazVersion
+              ) ++ integrationTestDeps(v))
+            )) dependsOn(library)
+ 
   lazy val filters =
     Project(id("filter"), file("filter"),
           settings = buildSettings ++ Seq(
