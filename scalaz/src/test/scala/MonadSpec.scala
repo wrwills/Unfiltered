@@ -108,6 +108,13 @@ trait MonadSpec extends unfiltered.spec.Hosted {
     }
     "Accumulate errors" in {
       Http.when(_ == 400)(host / "applicative_ints" as_str) must_=="NonEmptyList(Missing(No value for 'num1'), Missing(No value for 'num2'))"
+      Http.when(_ == 400)(host / "applicative_ints" <<? Map("num1" -> "8") as_str) must_=="NonEmptyList(Missing(No value for 'num2'))"
+      Http.when(_ == 400)(host / "applicative_ints" <<? Map("num2" -> "8") as_str) must_=="NonEmptyList(Missing(No value for 'num1'))"
+    }
+    "Properly fail on non-parseable inputs" in {
+      Http.when(_ == 400)(host / "applicative_ints" <<? Map("num1" -> "8a","num2" -> "8b") as_str) must_=="NonEmptyList(Invalid(Unable to convert values of parameter 'num1'->'8a' to int,None), Invalid(Unable to convert values of parameter 'num2'->'8b' to int,None))"
+      Http.when(_ == 400)(host / "applicative_ints" <<? Map("num1" -> "8","num2" -> "8b") as_str) must_=="NonEmptyList(Invalid(Unable to convert values of parameter 'num2'->'8b' to int,None))"
+      Http.when(_ == 400)(host / "applicative_ints" <<? Map("num1" -> "8a","num2" -> "8") as_str) must_=="NonEmptyList(Invalid(Unable to convert values of parameter 'num1'->'8a' to int,None))"
     }
   }
 
