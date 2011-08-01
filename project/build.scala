@@ -78,9 +78,13 @@ object Unfiltered extends Build {
             settings = buildSettings ++ Seq(
               name := "Unfiltered Scalaz",
               unmanagedClasspath in (local("scalaz"), Test) <++=
-                (fullClasspath in (local("spec"), Compile)).identity,
+                (fullClasspath in (local("spec"), Compile),
+                 fullClasspath in (local("filter"), Compile)) map { (s, f) =>
+                   s ++ f
+                 },
               libraryDependencies <++= scalaVersion(v => Seq(
-                "org.scalaz" %% "scalaz-core" % scalazVersion
+                "org.scalaz" %% "scalaz-core" % scalazVersion,
+                Shared.specsDep(v) % "test"
               ) ++ integrationTestDeps(v))
             )) dependsOn(library)
  
