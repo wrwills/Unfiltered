@@ -59,6 +59,15 @@ trait MonadSpec extends unfiltered.spec.Hosted {
                          success = s => Ok ~> ResponseString(s.get.toString))
       else BadRequest ~> ResponseString(result.log.map(x => "\"%s\"".format(x.message)).toStream.mkString("[",",","]"))
     }
+    case request@GET(UFPath("/applicative_ints")) => {
+      val expected:RequestMonad[A,Int] = for {
+        params <- getParams
+        number <- ((params.required[Int]("num1") |@| params.required[Int]("num2")){_ + _})
+      } yield number
+      val result = expected(request)
+      expected(request).over.fold(failure = f => BadRequest ~> ResponseString(f.toString),
+                                  success = s => Ok ~> ResponseString(s.toString))
+    }
   }
 
   "Strict Monadic extractor" should {
@@ -70,16 +79,16 @@ trait MonadSpec extends unfiltered.spec.Hosted {
       Http(host / "ints?number=8&number=9" as_str) must_=="[8,9]"
     }
     "fail if any conversion fails" in {
-      Http.when(_ == 400)(host / "ints?number=8&number=nine" as_str) must_=="Invalid(Unable to convert values of parameter 'number'->'[8,nine]' to int,None)"
+      Http.when(_ == 400)((host / "ints?number=8&number=nine") as_str) must_=="NonEmptyList(Invalid(Unable to convert values of parameter 'number'->'[8,nine]' to int,None))"
     }
     "fail on a non-number" in {
-      Http.when(_ == 400)(host / "int" <<? Map("number" -> "8a") as_str) must_== "Invalid(Unable to convert values of parameter 'number'->'8a' to int,None)"
+      Http.when(_ == 400)(host / "int" <<? Map("number" -> "8a") as_str) must_== "NonEmptyList(Invalid(Unable to convert values of parameter 'number'->'8a' to int,None))"
     }
     "match and return a string" in {
       Http(host / "string" <<? Map("string" -> "this is a test") as_str) must_=="this is a test"
     }
     "fail on a missing required argument" in {
-      Http.when(_ == 400)(host / "string" as_str) must_=="Missing(No value for 'string')"
+      Http.when(_ == 400)(host / "string" as_str) must_=="NonEmptyList(Missing(No value for 'string'))"
     }
   }
   "Relaxed Monadic extractor" should {
@@ -93,4 +102,13 @@ trait MonadSpec extends unfiltered.spec.Hosted {
       Http.when(_ == 400)(host / "relaxed_int" as_str) must_== """["Missing required parameter 'number'. The value must be an integer"]"""
     }
   }
+  "Applicative Functor extractor" should {
+    "match and return number" in {
+      Http(host / "applicative_ints" <<? Map("num1" -> "8","num2" -> "8") as_str) must_=="16"
+    }
+    "Accumulate errors" in {
+      Http.when(_ == 400)(host / "applicative_ints" as_str) must_=="NonEmptyList(Missing(No value for 'num1'), Missing(No value for 'num2'))"
+    }
+  }
+
 }
