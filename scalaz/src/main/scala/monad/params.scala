@@ -20,6 +20,11 @@ object DefaultConversions {
     def toSeq(in:Seq[String]):Seq[Int] = in.map(_.toInt)
   }
 
+  implicit val doubleConversions = new Conversion[Double] {
+    def to(in:String):Double = in.toDouble
+    def toSeq(in:Seq[String]):Seq[Double] = in.map(_.toDouble)
+  }
+
   implicit val boolConversions = new Conversion[Boolean] {
     def to(in:String):Boolean = in.toBoolean
     def toSeq(in:Seq[String]):Seq[Boolean] = in.map(_.toBoolean)
@@ -108,8 +113,11 @@ object ParamOps {
       rl.copy(over = rl.over.map(_.filter(test)))
 
     def isEmpty(value: => Validation[ERRORS[RequestError],Seq[T]]):RequestLogger[Seq[T]] =
-      rl.over.fold(failure = _ => rl,
-                   success = x => if (x.isEmpty) rl.copy(over = value) else rl)
+      rl.over.fold(failure = f => (f.head::f.tail) match {
+                                    case (Missing(_)::Nil) => rl.copy(over=value)
+                                    case _ => rl
+                                   },
+                   success = x => if (x.isEmpty) rl.copy(over=value) else rl)
   }
 
   class SeqParamOpsOptW[T](rl:RequestLogger[Option[Seq[T]]]) {
@@ -121,11 +129,10 @@ object ParamOps {
     def isEmpty(value: => Validation[ERRORS[RequestError],Option[Seq[T]]]):RequestLogger[Option[Seq[T]]] =
       rl.over.fold(failure = _ => rl,
                    success = {
-                     case None => rl
+                     case None => rl.copy(over=value)
                      case Some(x) => if (x.isEmpty) rl.copy(over=value) else rl
                    })
   }
-
 
   class StringParamOpsW(rl:RequestLogger[String]) {
     def trim:RequestLogger[String] =
@@ -135,7 +142,6 @@ object ParamOps {
   class SeqStringParamOpsW(rl:RequestLogger[Seq[String]]) {
     def trim:RequestLogger[Seq[String]] =
       rl.copy(over = rl.over.map(_.map(_.trim)))
-
   }
 
   class StringParamOpsOptW(rl:RequestLogger[Option[String]]) {

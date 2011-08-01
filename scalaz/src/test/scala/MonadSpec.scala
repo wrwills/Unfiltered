@@ -33,12 +33,28 @@ trait MonadSpec extends unfiltered.spec.Hosted {
                                   success = s => Ok ~> s)
     }
     case request@GET(UFPath("/ints")) => {
-      val expected:RequestMonad[A,ResponseString] = for {
+      val expected:RequestMonad[A,Seq[Int]] = for {
         params <- getParams
         number <- params.requiredSeq[Int]("number")
-      } yield ResponseString(number.mkString("[",",","]"))
+      } yield number
       expected(request).over.fold(failure = f => BadRequest ~> ResponseString(f.toString),
-                                  success = s => Ok ~> s)
+                                  success = s => Ok ~> ResponseString(s.mkString("[",",","]")))
+    }
+    case request@GET(UFPath("/optional_ints_with_handling")) => {
+      val expected:RequestMonad[A,Option[Seq[Int]]] = for {
+        params <- getParams
+        number <- params.optionalSeq[Int]("number").isEmpty(Some(List(8)).success)
+      } yield number
+      expected(request).over.fold(failure = f => BadRequest ~> ResponseString(f.toString),
+                                  success = s => Ok ~> ResponseString(s.map(_.mkString("[",",","]")).toString))
+    }
+    case request@GET(UFPath("/required_ints_with_handling")) => {
+      val expected:RequestMonad[A,Seq[Int]] = for {
+        params <- getParams
+        number <- params.requiredSeq[Int]("number").isEmpty(List(8).success)
+      } yield number
+      expected(request).over.fold(failure = f => BadRequest ~> ResponseString(f.toString),
+                                  success = s => Ok ~> ResponseString(s.mkString("[",",","]")))
     }
     case request@GET(UFPath("/string")) => {
       val expected:RequestMonad[A,ResponseString] = for {
@@ -47,6 +63,15 @@ trait MonadSpec extends unfiltered.spec.Hosted {
       } yield ResponseString(string)
       expected(request).over.fold(failure = f => BadRequest ~> ResponseString(f.toString),
                                   success = s => Ok ~> s)
+    }
+    case request@GET(UFPath("/strings")) => {
+      val expected:RequestMonad[A,String] = for {
+        params <- getParams
+        string1 <- params.required[String]("string1").trim
+        string2 <- params.required[String]("string2").trim
+      } yield string1+"+"+string2
+      expected(request).over.fold(failure = f => BadRequest ~> ResponseString(f.toString),
+                                  success = s => Ok ~> ResponseString(s))
     }
     case request@GET(UFPath("/applicative_ints")) => {
       val expected:RequestMonad[A,Int] = for {
@@ -78,6 +103,13 @@ trait MonadSpec extends unfiltered.spec.Hosted {
     }
     "fail on a missing required argument" in {
       Http.when(_ == 400)(host / "string" as_str) must_=="NonEmptyList(Missing(No value for 'string'))"
+    }
+    "allow string ops to clean things up" in {
+      Http(host / "strings" <<? Map("string1" -> "messy end   ","string2" -> "    messy beginning") as_str) must_== "messy end+messy beginning"
+    }
+    "allow handling of empty sequences" in {
+      Http(host / "optional_ints_with_handling" as_str) must_=="Some([8])"
+      Http(host / "required_ints_with_handling" as_str) must_=="[8]"
     }
   }
   "Applicative Functor extractor" should {
