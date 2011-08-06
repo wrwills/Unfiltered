@@ -76,11 +76,15 @@ trait MonadSpec extends unfiltered.spec.Hosted {
     case request@GET(UFPath("/applicative_ints")) => {
       val expected:RequestMonad[A,Int] = for {
         params <- getParams
-        number <- ((params.required[Int]("num1") |@| params.required[Int]("num2")){_ + _})
+        number <-
+          (params.required[Int]("num1") |@|
+           params.required[Int]("num2")) { _ + _ }
       } yield number
       val result = expected(request)
-      expected(request).over.fold(failure = f => BadRequest ~> ResponseString(f.toString),
-                                  success = s => Ok ~> ResponseString(s.toString))
+      expected(request).over.fold(
+        failure = f => BadRequest ~> ResponseString(f.toString),
+        success = s => Ok ~> ResponseString(s.toString)
+      )
     }
   }
 
