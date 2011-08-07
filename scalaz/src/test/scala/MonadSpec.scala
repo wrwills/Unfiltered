@@ -25,7 +25,7 @@ trait MonadSpec extends unfiltered.spec.Hosted {
 
   def intent[A,B]: unfiltered.Cycle.Intent[A,B] = {
     case request@GET(UFPath("/int")) => {
-      val expected:RequestMonad[A,ResponseString] = for {
+      val expected = for {
         params <- getParams
         number <- params.required[Int]("number")
       } yield ResponseString(number.toString)
@@ -33,7 +33,7 @@ trait MonadSpec extends unfiltered.spec.Hosted {
                                   success = s => Ok ~> s)
     }
     case request@GET(UFPath("/ints")) => {
-      val expected:RequestMonad[A,Seq[Int]] = for {
+      val expected = for {
         params <- getParams
         number <- params.requiredSeq[Int]("number")
       } yield number
@@ -41,7 +41,7 @@ trait MonadSpec extends unfiltered.spec.Hosted {
                                   success = s => Ok ~> ResponseString(s.mkString("[",",","]")))
     }
     case request@GET(UFPath("/optional_ints_with_handling")) => {
-      val expected:RequestMonad[A,Option[Seq[Int]]] = for {
+      val expected = for {
         params <- getParams
         number <- params.optionalSeq[Int]("number").isEmpty(Some(List(8)).success)
       } yield number
@@ -49,7 +49,7 @@ trait MonadSpec extends unfiltered.spec.Hosted {
                                   success = s => Ok ~> ResponseString(s.map(_.mkString("[",",","]")).toString))
     }
     case request@GET(UFPath("/required_ints_with_handling")) => {
-      val expected:RequestMonad[A,Seq[Int]] = for {
+      val expected = for {
         params <- getParams
         number <- params.requiredSeq[Int]("number").isEmpty(List(8).success)
       } yield number
@@ -57,7 +57,7 @@ trait MonadSpec extends unfiltered.spec.Hosted {
                                   success = s => Ok ~> ResponseString(s.mkString("[",",","]")))
     }
     case request@GET(UFPath("/string")) => {
-      val expected:RequestMonad[A,ResponseString] = for {
+      val expected = for {
         params <- getParams
         string <- params.required[String]("string")
       } yield ResponseString(string)
@@ -65,7 +65,7 @@ trait MonadSpec extends unfiltered.spec.Hosted {
                                   success = s => Ok ~> s)
     }
     case request@GET(UFPath("/strings")) => {
-      val expected:RequestMonad[A,String] = for {
+      val expected = for {
         params <- getParams
         string1 <- params.required[String]("string1").trim
         string2 <- params.required[String]("string2").trim
@@ -74,7 +74,7 @@ trait MonadSpec extends unfiltered.spec.Hosted {
                                   success = s => Ok ~> ResponseString(s))
     }
     case request@GET(UFPath("/applicative_ints")) => {
-      val expected:RequestMonad[A,Int] = for {
+      val expected = for {
         params <- getParams
         number <-
           (params.required[Int]("num1") |@|
